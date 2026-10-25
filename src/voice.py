@@ -2,7 +2,7 @@ import wave
 import numpy as np
 from piper import PiperVoice
 
-voice = PiperVoice.load("voice_model/en_GB-jenny_dioco-medium.onnx")
+voice = PiperVoice.load("../voice_model/en_GB-jenny_dioco-medium.onnx")
 sample_rate = voice.config.sample_rate
 
 def text_to_speech(text):

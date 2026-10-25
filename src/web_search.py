@@ -80,7 +80,7 @@ def summarize_news(content):
     ids = tok(content, truncation=True, max_length=3000)["input_ids"]
     content = tok.decode(ids, skip_special_tokens=True)
 
-    prompt = [{"role": "user", "content": "Summarize this into a news report.\n" + content}]
+    prompt = [{"role": "user", "content": "Summarize this into a news report (about 200 words). Give only readable text and no special symbols.\n" + content}]
     to_pass = tok.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True, enable_thinking=False)
     final = summarizer(to_pass,  return_full_text=False)
     to_speak = final[0]['generated_text']
