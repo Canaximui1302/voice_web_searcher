@@ -1,5 +1,6 @@
 import os
 import torch
+import gc
 import gradio as gr
 from transformers import pipeline
 import numpy as np  
@@ -8,7 +9,7 @@ from ollama import Client, ResponseError
 print(torch.cuda.is_available())
 print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else "no GPU")
 
-summarizer = pipeline("text-generation", model="Qwen/Qwen3-0.6B", device=0, dtype=torch.bfloat16)
+summarizer = pipeline("text-generation", model="Qwen/Qwen3-0.6B", device=0, dtype=torch.bfloat16).to("cuda")
 client = Client(headers={'Authorization': f"Bearer {os.getenv('OLLAMA_API_KEY')}"})
 
 transcriber = pipeline(
@@ -46,60 +47,49 @@ def transcribe(data):
     return result["text"]
 
 
-def fetch_content(text):
-    # search on internet based on the prompt
+def fetch_content(text, max_tries=5, min_chars=300):
     response = client.web_search(text)
-    link = response['results'][0]['url']
-    print("Retrieved URL: ", link)
+    results = response["results"][:max_tries]
 
-    # fetch content of the first link
-    try:
-        summ = client.web_fetch(link)
-        content = summ['content']
-        return content 
-    except ResponseError as e:
-        print("status:", e.status_code)
-        print("message:", e.error)
-        return ""   # or raise a friendlier error for the UI
+    for i, result in enumerate(results, start=1):
+        link = result["url"]
+        print(f"[{i}/{len(results)}] Fetching URL: {link}")
+        try:
+            page = client.web_fetch(link)
+            content = page["content"]
+        except ResponseError as e:
+            print("  status:", e.status_code, "| message:", e.error)
+            continue                       # go to the next link
+        except Exception as e:
+            print("  unexpected error:", repr(e))
+            continue
+
+        if content and len(content.strip()) >= min_chars:
+            print("  OK")
+            return content           # stop at the first success
+
+        print("  too little text, skipping")
+
+    return None, None # nothing works
 
 # for debugging with print, use 'stream_option=True'
 def summarize_news(content, stream_option = True):
-    torch.cuda.empty_cache()
+    
+
+    tok = summarizer.tokenizer
+
+    # cap the input by tokens
+    ids = tok(content, truncation=True, max_length=3000)["input_ids"]
+    content = tok.decode(ids, skip_special_tokens=True)
+
     prompt = [{"role": "user", "content": "Summarize this into a news report.\n" + content}]
-    to_pass = summarizer.tokenizer.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True, enable_thinking=False)
+    to_pass = tok.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True, enable_thinking=False)
     final = summarizer(to_pass,  return_full_text=False)
     to_speak = final[0]['generated_text']
 
-    # print("*** SUMMARIZED NEWS ***")
-    # for i in final:
-    #     to_speak += i['message']['content']
-    #     if (stream_option):
-    #         print(i['message']['content'], end='')
-    # print("\n*** DONE NEWS ***\n")
-
     print(to_speak)
+
+    gc.collect()
+    torch.cuda.empty_cache()
+    torch.cuda.reset_peak_memory_stats()
     return to_speak
-
-
-def gradio_fct(data):
-    request = transcribe(data)
-    fetch_text = fetch_content(request)
-    summarized = summarize_news(fetch_text, False)
-    # print(summarized)
-    return summarized
-
-
-demo = gr.Interface(
-    fn=gradio_fct,
-    inputs=gr.Audio(
-        sources=["microphone"],
-        type='numpy',
-        waveform_options={"show_recording_waveform": False}
-    ),
-    outputs=gr.Textbox(),
-    api_name="prediction"
-)
-
-demo.launch()
-
-# summarize_news(fetch_content("what are some latest AI news"))
