@@ -1,0 +1,8 @@
+.venv/
+gradio_learn/
+.gradio/
+__pycache__/
+*.pyc
+.env
+*.wav
+flagged/
