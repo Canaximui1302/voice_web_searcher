@@ -9,7 +9,7 @@ from ollama import Client, ResponseError
 print(torch.cuda.is_available())
 print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else "no GPU")
 
-summarizer = pipeline("text-generation", model="Qwen/Qwen3-0.6B", device=0, dtype=torch.bfloat16).to("cuda")
+summarizer = pipeline("text-generation", model="Qwen/Qwen3-0.6B", device=0, dtype=torch.bfloat16)
 client = Client(headers={'Authorization': f"Bearer {os.getenv('OLLAMA_API_KEY')}"})
 
 transcriber = pipeline(
@@ -73,9 +73,7 @@ def fetch_content(text, max_tries=5, min_chars=300):
     return None, None # nothing works
 
 # for debugging with print, use 'stream_option=True'
-def summarize_news(content, stream_option = True):
-    
-
+def summarize_news(content):
     tok = summarizer.tokenizer
 
     # cap the input by tokens
