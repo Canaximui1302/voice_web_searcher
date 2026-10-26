@@ -1,10 +1,10 @@
 import gradio as gr
 from transformers import pipeline
-
+import spaces
 import web_search as ws
 import voice as vc
 
-
+@spaces.GPU
 def gradio_fct(data):
     if data is None:
         yield "Please record a request first.", None
