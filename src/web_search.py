@@ -5,6 +5,8 @@ import gradio as gr
 from transformers import pipeline
 import numpy as np  
 from ollama import Client, ResponseError
+from threading import Thread
+from transformers import TextIteratorStreamer
 
 print(torch.cuda.is_available())
 print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else "no GPU")
@@ -73,7 +75,7 @@ def fetch_content(text, max_tries=5, min_chars=300):
     return None, None # nothing works
 
 # for debugging with print, use 'stream_option=True'
-def summarize_news(content):
+def summarize(content):
     tok = summarizer.tokenizer
 
     # cap the input by tokens
@@ -82,12 +84,17 @@ def summarize_news(content):
 
     prompt = [{"role": "user", "content": "Summarize this into a news report (about 200 words). Give only readable text and no special symbols.\n" + content}]
     to_pass = tok.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True, enable_thinking=False)
-    final = summarizer(to_pass,  return_full_text=False)
-    to_speak = final[0]['generated_text']
 
-    print(to_speak)
+    streamer = TextIteratorStreamer(tok, skip_prompt=True, skip_special_tokens=True, timeout=120)
+    thread = Thread(
+        target=summarizer,
+        args=(to_pass,),
+        kwargs=dict(streamer=streamer, max_new_tokens=400, do_sample=False, return_full_text=False),
+    )
+    thread.start()
 
-    gc.collect()
-    torch.cuda.empty_cache()
-    torch.cuda.reset_peak_memory_stats()
-    return to_speak
+    text = ""
+    for piece in streamer:
+        text += piece
+        yield text
+    thread.join()

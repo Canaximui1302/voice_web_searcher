@@ -6,12 +6,22 @@ import voice as vc
 
 
 def gradio_fct(data):
-    
+    if data is None:
+        yield "Please record a request first.", None
+        return
+
     request = ws.transcribe(data)
-    fetch_text = ws.fetch_content(request)
-    summarized = ws.summarize_news(fetch_text)
-    # print(summarized)
-    return summarized, vc.text_to_speech(summarized)
+    content = ws.fetch_content(request)
+    if content is None:
+        yield "Couldn't fetch any page. Try rephrasing.", None
+        return
+
+    final = ""
+    for partial in ws.summarize(content):
+        final = partial
+        yield partial, None                    # text grows, audio stays empty
+
+    yield final, vc.text_to_speech(final)         # audio appears when the text is complete
 
 
 with gr.Blocks() as demo:
@@ -35,7 +45,7 @@ with gr.Blocks() as demo:
             mic = gr.Audio(sources=["microphone"], type="numpy", label="Record")
             btn = gr.Button("Summarize", variant="primary")
             summary_box = gr.Textbox(label="Summary", lines=5, elem_id="summary_box")
-            audio_out = gr.Audio(label="Spoken summary", autoplay=True)
+            audio_out = gr.Audio(label="Spoken summary", autoplay=True, streaming=True)
         gr.Column(scale=2)                      # empty right margin
 
     btn.click(gradio_fct, inputs=mic, outputs=[summary_box, audio_out])
