@@ -1,13 +1,25 @@
 import wave
 import numpy as np
-from piper import PiperVoice
+from kokoro import KPipeline
 
-voice = PiperVoice.load("../voice_model/en_GB-jenny_dioco-medium.onnx")
-sample_rate = voice.config.sample_rate
+pipeline = KPipeline(lang_code='a')
+SAMPLE_RATE = 24000                   
 
 def text_to_speech(text):
-    pcm = []
-    for chunk in voice.synthesize(text):
-        pcm.append(chunk.audio_int16_bytes)
-    audio = np.frombuffer(b"".join(pcm), dtype=np.int16)
-    return sample_rate, audio
+    generator = pipeline(text, voice='af_heart')
+
+    parts = []
+    for _, _, audio in generator:
+        if audio is None:
+            continue
+        if hasattr(audio, "detach"):          # torch tensor -> numpy
+            audio = audio.detach().cpu().numpy()
+        parts.append(np.asarray(audio, dtype=np.float32))
+
+    if not parts:
+        return None
+
+    audio = np.concatenate(parts)
+    audio = (np.clip(audio, -1.0, 1.0) * 32767).astype(np.int16)   # same format as the Piper version
+
+    return SAMPLE_RATE, audio
