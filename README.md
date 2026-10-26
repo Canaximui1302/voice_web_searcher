@@ -1,4 +1,5 @@
 # Voice News Assistant
+![Voice News Assistant demo](github_space.gif)
 
 Record a spoken request and get a short, spoken news summary.
 
