@@ -53,6 +53,7 @@ css = """
 #summary_box {
     padding-top: 8px !important;
 }
+
 """
 
 demo.launch(theme=theme, css=css)
