@@ -8,9 +8,9 @@ Record a spoken request and get a short, spoken news summary.
 
 ## How it works
 
-1. **Speech to text:** your recording is transcribed with Whisper (`<model name>`).
-2. **Search and fetch:** Ollama's web search finds pages for the request, and the app tries them in order until one returns usable text.
-3. **Summarize:** Qwen3-0.6B writes a ~200-word news report from the page.
+1. **Speech to text:** your recording is transcribed with Whisper (`openai/whisper-base.en`).
+2. **Search and fetch:** Ollama's web search finds pages for the request, and try to fetch the URLs for content.
+3. **Summarize:** Qwen3-0.6B writes a ~200-word news report from the fetched page.
 4. **Text to speech:** Kokoro reads the summary aloud.
 
 The UI is built with Gradio.
