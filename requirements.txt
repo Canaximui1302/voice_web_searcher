@@ -1,0 +1,8 @@
+transformers
+torch
+torchaudio
+numpy
+soundfile
+huggingface_hub
+ollama>=0.6.0
+kokoro>=0.8
