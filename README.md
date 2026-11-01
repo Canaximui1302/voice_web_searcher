@@ -9,8 +9,21 @@ Record a spoken request and get a short, spoken news summary.
 
 ## How it works
 
+```mermaid
+flowchart TD
+    A[User records a spoken request] --> B[Whisper: speech to text]
+    B --> C[Ollama web search: find pages]
+    C --> D[Fetch page content]
+    D -- Fetch fails or site blocks it --> D
+    D -- Content fetched --> E[Qwen3-0.6B]
+    E --> F[Kokoro: text to speech]
+    F --> G[Gradio UI: play spoken summary]
+```
+
+
+
 1. **Speech to text:** your recording is transcribed with Whisper (`openai/whisper-base.en`).
-2. **Search and fetch:** Ollama's web search finds pages for the request, and try to fetch the URLs for content.
+2. **Search and fetch:** Ollama's `web_search` finds a list of URLs for the request, and Ollama's `web_fetch` tries the list of URLs for content fetching until first successful fetch.
 3. **Summarize:** Qwen3-0.6B writes a ~200-word news report from the fetched page.
 4. **Text to speech:** Kokoro reads the summary aloud.
 
