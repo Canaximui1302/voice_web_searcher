@@ -5,7 +5,7 @@ Record a spoken request and get a short, spoken news summary.
 
 **Live demo:** https://huggingface.co/spaces/Canaximui1302/voice_web_search
 
-![Demo](assets/demo.gif)
+
 
 ## How it works
 
