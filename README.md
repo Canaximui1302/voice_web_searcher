@@ -49,3 +49,5 @@ An Ollama account and API key are needed for web search and fetch (ollama.com/se
 ## Credits
 
 Whisper, Qwen3, Kokoro, Gradio, Hugging Face Transformers, Ollama. Check each model's license before reusing.
+
+Built by Nguyen Ho Minh Khanh.
