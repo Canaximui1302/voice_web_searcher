@@ -1,4 +1,9 @@
 # Voice News Assistant
+> **Note (November 2026):** This demo is currently not working. Ollama changed
+> its web search API, which now requires paid usage credits (it returns a `402`
+> error), so the Space can no longer fetch content.
+
+
 ![Voice News Assistant demo](github_space.gif)
 
 Record a spoken request and get a short, spoken news summary.
