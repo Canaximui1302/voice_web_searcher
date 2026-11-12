@@ -19,7 +19,7 @@ flowchart TD
     D -- Content fetched --> E[Qwen3-0.6B]
     E --> F[Kokoro: text to speech]
     F --> G[Gradio UI: play spoken summary]
-```****
+```
 
 
 
