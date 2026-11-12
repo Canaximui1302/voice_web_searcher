@@ -3,16 +3,17 @@ import torch
 import gc
 import gradio as gr
 from transformers import pipeline
-import numpy as np  
-from ollama import Client, ResponseError
+import numpy as np
 from threading import Thread
 from transformers import TextIteratorStreamer
+from tinyfish import TinyFish
+
+client = TinyFish()
 
 print(torch.cuda.is_available())
 print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else "no GPU")
 
 summarizer = pipeline("text-generation", model="Qwen/Qwen3-0.6B", device=0, dtype=torch.bfloat16)
-client = Client(headers={'Authorization': f"Bearer {os.getenv('OLLAMA_API_KEY')}"})
 
 transcriber = pipeline(
     "automatic-speech-recognition",
@@ -50,21 +51,20 @@ def transcribe(data):
 
 
 def fetch_content(text, max_tries=5, min_chars=300):
-    response = client.web_search(text)
-    results = response["results"][:max_tries]
+    # Web search by query 'text'
+    response = client.search.query(query=text, domain_type="news")
+    top_urls = [r.url for r in response.results[:max_tries]]
 
-    for i, result in enumerate(results, start=1):
-        link = result["url"]
-        print(f"[{i}/{len(results)}] Fetching URL: {link}")
-        try:
-            page = client.web_fetch(link)
-            content = page["content"]
-        except ResponseError as e:
-            print("  status:", e.status_code, "| message:", e.error)
-            continue                       # go to the next link
-        except Exception as e:
-            print("  unexpected error:", repr(e))
-            continue
+    # Try to fetch in list of URLs retrieved
+    for i, url in enumerate(top_urls, start=1):
+        link = url
+        print(f"[{i}/{len(top_urls)}] Fetching URL: {link}")
+
+        # fetche content from i-th url in the list
+        fetched = client.fetch.get_contents(urls=[url], format="markdown").results[0]
+        content = fetched.text
+        print(f"Title: {fetched.title}")
+        print(fetched.text)
 
         if content and len(content.strip()) >= min_chars:
             print("  OK")
