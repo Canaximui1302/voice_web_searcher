@@ -15,6 +15,15 @@ print(torch.cuda.get_device_name(0) if torch.cuda.is_available() else "no GPU")
 
 summarizer = pipeline("text-generation", model="Qwen/Qwen3-0.6B", device=0, dtype=torch.bfloat16)
 
+SYSTEM = (
+    "You summarize news for a text-to-speech reader. "
+    "Write sentences of plain, flowing prose. "
+    "Do not use bullet points, lists, headings, markdown, or emojis. "
+    "Ignore menus, ads, event listings, dates and unrelated headlines. "
+    "Use only information from the provided text."
+)
+
+
 transcriber = pipeline(
     "automatic-speech-recognition",
     model="openai/whisper-base.en"
@@ -52,7 +61,7 @@ def transcribe(data):
 
 def fetch_content(text, max_tries=5, min_chars=300):
     # Web search by query 'text'
-    response = client.search.query(query=text, domain_type="news")
+    response = client.search.query(query=text)
     top_urls = [r.url for r in response.results[:max_tries]]
 
     # Try to fetch in list of URLs retrieved
@@ -72,7 +81,7 @@ def fetch_content(text, max_tries=5, min_chars=300):
 
         print("  too little text, skipping")
 
-    return None, None # nothing works
+    return None # nothing works
 
 # for debugging with print, use 'stream_option=True'
 def summarize(content):
@@ -82,7 +91,10 @@ def summarize(content):
     ids = tok(content, truncation=True, max_length=3000)["input_ids"]
     content = tok.decode(ids, skip_special_tokens=True)
 
-    prompt = [{"role": "user", "content": "Summarize this into a news report (about 200 words). Give only readable text and no special symbols.\n" + content}]
+    prompt = [
+        {"role": "system", "content": SYSTEM},
+        {"role": "user", "content": f"Summarize the main news:\n\n{content}"},
+    ]
     to_pass = tok.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True, enable_thinking=False)
 
     streamer = TextIteratorStreamer(tok, skip_prompt=True, skip_special_tokens=True, timeout=120)
