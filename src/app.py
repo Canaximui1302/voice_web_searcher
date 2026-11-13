@@ -17,7 +17,7 @@ def gradio_fct(data):
         return
 
     final = ""
-    for partial in ws.summarize(content):
+    for partial in ws.summarize(request, content):
         final = partial
         yield partial, None                    # text grows, audio stays empty
 

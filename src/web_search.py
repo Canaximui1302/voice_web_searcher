@@ -77,14 +77,14 @@ def fetch_content(text, max_tries=5, min_chars=300):
 
         if content and len(content.strip()) >= min_chars:
             print("  OK")
-            return content           # stop at the first success
+            return text, content           # stop at the first success
 
         print("  too little text, skipping")
 
-    return None # nothing works
+    return None, None # nothing works
 
 # for debugging with print, use 'stream_option=True'
-def summarize(content):
+def summarize(query, content):
     tok = summarizer.tokenizer
 
     # cap the input by tokens
@@ -93,7 +93,11 @@ def summarize(content):
 
     prompt = [
         {"role": "system", "content": SYSTEM},
-        {"role": "user", "content": f"Summarize the main news:\n\n{content}"},
+        {"role": "user", "content": (
+            f"<request>\n{query}\n</request>\n\n"
+            f"<article>\n{content}\n</article>\n\n"
+            "Give a short news summary according to the request."
+        )},
     ]
     to_pass = tok.apply_chat_template(prompt, tokenize=False, add_generation_prompt=True, enable_thinking=False)
 
